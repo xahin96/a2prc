@@ -50,8 +50,8 @@ bool searchChildProcess(int childPID, int parentPID) {
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
     argc = 3;
-    argv[1] = "9197";
-    argv[2] = "9117";
+    argv[1] = "34484";
+    argv[2] = "34468";
     argv[3] = "-zs";
     if (argc == 3) {
         // Get the parent and child PIDs from the command line arguments

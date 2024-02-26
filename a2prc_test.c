@@ -3,9 +3,13 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define MAX_PIDS 100 // Maximum number of PIDs to store
 #define BUFFER_SIZE 1024
 
-// Function to search for the child process under the specified parent process without recursion
+int foundPIDs[MAX_PIDS]; // Global array to store found PIDs
+int numFound = 0; // Number of PIDs found
+
+// Function to recursively search for the child process under the specified parent process
 bool searchChildProcess(int childPID, int parentPID) {
     // Open the pipe to read the output of the ps command
     FILE *pipe = popen("ps -o pid,ppid -ax", "r");
@@ -25,12 +29,21 @@ bool searchChildProcess(int childPID, int parentPID) {
         if (pid == childPID) {
             // Check if the parent PID matches the specified parent PID
             if (ppid == parentPID) {
-                // Print the child PID
-                printf("%d\n", pid);
+                // Store the child PID in the global array
+                foundPIDs[numFound++] = pid;
                 pclose(pipe);
                 return true;
             }
-            // If the parent PID does not match, continue searching
+                // If the parent PID does not match, recursively search for the parent process
+            else {
+                bool found = searchChildProcess(ppid, parentPID);
+                if (found) {
+                    // Store the child PID in the global array
+                    foundPIDs[numFound++] = pid;
+                    pclose(pipe);
+                    return true;
+                }
+            }
         }
     }
     // Close the pipe
@@ -40,28 +53,37 @@ bool searchChildProcess(int childPID, int parentPID) {
 
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
-    argc = 3;
-    argv[1] = "85319";
-    argv[2] = "85308";
-    if (argc != 3) {
-        printf("Usage: %s <childPID> <parentPID>\n", argv[0]);
-        return 1;
-    }
-
-    // Get the parent and child PIDs from the command line arguments
+    argc = 4;
+    argv[1] = "38838";
+    argv[2] = "38810";
+    argv[3] = "-rp";
     int childPID = atoi(argv[1]);
     int parentPID = atoi(argv[2]);
 
-    // Check if the provided PIDs are valid
-    if (childPID <= 0 || parentPID <= 0) {
-        printf("Invalid PIDs\n");
-        return 1;
-    }
-
-    // Search for the child process under the specified parent process
     if (!searchChildProcess(childPID, parentPID)) {
         printf("Child process %d not found under parent process %d\n", childPID, parentPID);
     }
 
+    // Use the foundPIDs array in the if blocks as needed
+    if (argc == 3) {
+        // Print the found PIDs
+        printf("Found PIDs: ");
+        for (int i = 0; i < numFound; ++i) {
+            printf("%d ", foundPIDs[i]);
+        }
+        printf("\n");
+        return 0;
+    }
+    if (argc == 4) {
+        if (strcmp(argv[3], "-rp") == 0)
+        {
+            printf("-rp process_id is killed if it belongs to the process tree rooted at root_process ");
+        }
+        if (strcmp(argv[3], "-pr") == 0)
+        {
+            printf("-pr the root_process is killed (if it is valid) ");
+        }
+    }
+    printf("Usage: %s <childPID> <parentPID>\n", argv[0]);
     return 0;
 }
