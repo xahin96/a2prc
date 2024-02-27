@@ -82,6 +82,37 @@ bool searchChildProcess(int childPID, int parentPID) {
     return false;
 }
 
+// Function to recursively search for non-direct descendants of a process
+void searchNonDirectDescendants(int parentPID)
+{
+    numFound = 0;
+    // Open the pipe to read the output of the ps command
+    FILE *pipe = popen("ps -o pid,ppid -ax", "r");
+    if (!pipe)
+    {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the output of the ps command line by line
+    char line[BUFFER_SIZE];
+    fgets(line, BUFFER_SIZE, pipe); // Read and discard the header line
+    while (fgets(line, BUFFER_SIZE, pipe))
+    {
+        // Extract the PID and PPID from the line
+        int pid, ppid;
+        sscanf(line, "%d %d", &pid, &ppid);
+        // Check if the current process is a non-direct descendant of the specified parent process
+        if (ppid != parentPID && searchChildProcess(ppid, parentPID))
+        {
+            // Store the PID of the non-direct descendant
+            foundPIDs[numFound++] = pid;
+        }
+    }
+    // Close the pipe
+    pclose(pipe);
+}
+
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
     int childPID = atoi(argv[1]);
@@ -130,6 +161,16 @@ int main(int argc, char *argv[]) {
                 printf("The parent process with PID %d was not created by you.\n", parentPID);
             }
             return 0;
+        }
+        else if (strcmp(argv[3], "-xn") == 0)
+        {
+            // Search for non-direct descendants and print their PIDs
+            searchNonDirectDescendants(childPID);
+            printf("Non-direct descendants of process %d:\n", childPID);
+            for (int i = 0; i < numFound; ++i)
+            {
+                printf("%d\n", foundPIDs[i]);
+            }
         }
     }
     printf("Usage: %s <childPID> <parentPID>\n", argv[0]);
