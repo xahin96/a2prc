@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <unistd.h> // Include for getuid
-#include <signal.h> // Include for kill function
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+
 
 #define MAX_PIDS 100 // Maximum number of PIDs to store
 #define BUFFER_SIZE 1024
@@ -94,10 +96,6 @@ bool searchChildProcess(int childPID, int parentPID) {
 
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
-    argc = 4;
-    argv[1] = "44455";
-    argv[2] = "44450";
-    argv[3] = "-pr";
     int childPID = atoi(argv[1]);
     int parentPID = atoi(argv[2]);
 
@@ -120,10 +118,13 @@ int main(int argc, char *argv[]) {
         {
             // Kill the processes found in the foundPIDs array
             for (int i = 0; i < numFound; ++i) {
-                if (kill(foundPIDs[i], SIGKILL) == 0) {
-                    printf("Process %d killed\n", foundPIDs[i]);
-                } else {
-                    printf("Failed to kill process %d\n", foundPIDs[i]);
+                if (foundPIDs[i] == childPID)
+                {
+                    if (kill(foundPIDs[i], SIGKILL) == 0) {
+                        printf("Process %d killed\n", foundPIDs[i]);
+                    } else {
+                        printf("Failed to kill process %d\n", foundPIDs[i]);
+                    }
                 }
             }
         }
