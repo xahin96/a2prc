@@ -113,6 +113,74 @@ void searchNonDirectDescendants(int parentPID)
     pclose(pipe);
 }
 
+void searchDirectDescendants(int parentPID) {
+    // Clear the foundPIDs array before populating it with new direct descendants
+    numFound = 0;
+
+    // Open the pipe to read the output of the ps command
+    FILE *pipe = popen("ps -o pid,ppid -ax", "r");
+    if (!pipe) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the output of the ps command line by line
+    char line[BUFFER_SIZE];
+    fgets(line, BUFFER_SIZE, pipe); // Read and discard the header line
+    while (fgets(line, BUFFER_SIZE, pipe)) {
+        // Extract the PID and PPID from the line
+        int pid, ppid;
+        sscanf(line, "%d %d", &pid, &ppid);
+
+        // Check if the current process is a direct descendant of the specified parent process
+        if (ppid == parentPID) {
+            // Store the PID of the direct descendant at the end of the foundPIDs array
+            foundPIDs[numFound++] = pid;
+        }
+    }
+    // Close the pipe
+    pclose(pipe);
+}
+
+
+// Function to get the parent process ID (ppid) of a given process ID (pid)
+int getParentPID(int processID) {
+    FILE *pipe = popen("ps -o pid,ppid -ax", "r");
+    if (!pipe) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+
+    char line[BUFFER_SIZE];
+    fgets(line, BUFFER_SIZE, pipe); // Read and discard the header line
+    while (fgets(line, BUFFER_SIZE, pipe)) {
+        int pid, ppid;
+        sscanf(line, "%d %d", &pid, &ppid);
+
+        if (pid == processID) {
+            pclose(pipe);
+            return ppid; // Return the parent process ID
+        }
+    }
+    pclose(pipe);
+    return -1; // If the process ID is not found, return -1
+}
+
+void searchSiblingProcesses(int processID) {
+    // Get the parent process ID (ppid) of the specified processID
+    int parentPID = getParentPID(processID);
+
+    // If getParentPID returns -1, it means the specified processID doesn't exist
+    if (parentPID == -1) {
+        printf("Process with PID %d does not exist.\n", processID);
+        return;
+    }
+
+    // Use searchDirectDescendants to find all direct descendants of the parent process
+    searchDirectDescendants(parentPID);
+}
+
+
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
     int childPID = atoi(argv[1]);
@@ -146,7 +214,7 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        if (strcmp(argv[3], "-pr") == 0){
+        else if (strcmp(argv[3], "-pr") == 0){
             // Check if the parent process was created by the current user
             if (isProcessCreatedByMe(parentPID)){
                 // Kill the parent process
@@ -171,6 +239,29 @@ int main(int argc, char *argv[]) {
             {
                 printf("%d\n", foundPIDs[i]);
             }
+            return 0;
+        }
+        else if (strcmp(argv[3], "-xd") == 0)
+        {
+            // Search for non-direct descendants and print their PIDs
+            searchDirectDescendants(childPID);
+            printf("direct descendants of process %d:\n", childPID);
+            for (int i = 0; i < numFound; ++i)
+            {
+                printf("%d\n", foundPIDs[i]);
+            }
+            return 0;
+        }
+        else if (strcmp(argv[3], "-xs") == 0)
+        {
+            // Search for non-direct descendants and print their PIDs
+            searchSiblingProcesses(childPID);
+            printf("siblings of process %d:\n", childPID);
+            for (int i = 1; i < numFound; ++i)
+            {
+                printf("%d\n", foundPIDs[i]);
+            }
+            return 0;
         }
     }
     printf("Usage: %s <childPID> <parentPID>\n", argv[0]);
