@@ -6,15 +6,14 @@
 #include <signal.h>
 #include <sys/types.h>
 
-
 #define MAX_PIDS 100 // Maximum number of PIDs to store
 #define BUFFER_SIZE 1024
 
 int foundPIDs[MAX_PIDS]; // Global array to store found PIDs
-int numFound = 0; // Number of PIDs found
+int numFound = 0;        // Number of PIDs found
 
-// Function to kill a process if it was created by the current user
-void killProcessIfCreatedByMe(pid_t pid) {
+// Function to check if a process was created by the current user
+bool isProcessCreatedByMe(pid_t pid) {
     // Get the user ID of the current process
     uid_t my_uid = getuid();
 
@@ -27,7 +26,7 @@ void killProcessIfCreatedByMe(pid_t pid) {
     fp = fopen(filename, "r");
     if (fp == NULL) {
         perror("Error opening file");
-        return;
+        return false;
     }
     while (fgets(line, 100, fp) != NULL) {
         if (strncmp(line, "Uid:", 4) == 0) {
@@ -38,18 +37,7 @@ void killProcessIfCreatedByMe(pid_t pid) {
     fclose(fp);
 
     // Check if the process was created by the current user
-    if (process_uid == my_uid) {
-        printf("The process with PID %d was created by you.\n", pid);
-
-        // Kill the process
-        if (kill(pid, SIGKILL) == 0) {
-            printf("Process killed successfully.\n");
-        } else {
-            perror("Error killing process");
-        }
-    } else {
-        printf("The process with PID %d was not created by you.\n", pid);
-    }
+    return (process_uid == my_uid);
 }
 
 // Function to recursively search for the child process under the specified parent process
@@ -114,8 +102,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     if (argc == 4) {
-        if (strcmp(argv[3], "-rp") == 0)
-        {
+        if (strcmp(argv[3], "-rp") == 0){
             // Kill the processes found in the foundPIDs array
             for (int i = 0; i < numFound; ++i) {
                 if (foundPIDs[i] == childPID)
@@ -128,9 +115,20 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        if (strcmp(argv[3], "-pr") == 0)
-        {
-            killProcessIfCreatedByMe(parentPID);
+        if (strcmp(argv[3], "-pr") == 0){
+            // Check if the parent process was created by the current user
+            if (isProcessCreatedByMe(parentPID)){
+                // Kill the parent process
+                if (kill(parentPID, SIGKILL) == 0){
+                    printf("Parent process %d killed\n", parentPID);
+                }
+                else{
+                    printf("Failed to kill parent process %d\n", parentPID);
+                }
+            }
+            else{
+                printf("The parent process with PID %d was not created by you.\n", parentPID);
+            }
             return 0;
         }
     }
