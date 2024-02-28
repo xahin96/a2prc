@@ -239,6 +239,40 @@ void pauseProcess(int processID) {
     }
 }
 
+// Function to recursively search for defunct processes among the descendants of a process
+void searchDefunctProcesses(int parentPID) {
+//    numFound = 0;
+
+    // Open the pipe to read the output of the ps command
+    FILE *pipe = popen("ps -o pid,state,ppid -ax", "r");
+    if (!pipe) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the output of the ps command line by line
+    char line[BUFFER_SIZE];
+    fgets(line, BUFFER_SIZE, pipe); // Read and discard the header line
+    while (fgets(line, BUFFER_SIZE, pipe)) {
+        // Extract the PID, state, and PPID from the line
+        int pid, ppid;
+        char state;
+        sscanf(line, "%d %c %d", &pid, &state, &ppid);
+
+        // Check if the current process is a descendant of the specified parent process
+        if (searchChildProcess(pid, parentPID)) {
+            // Check if the process is in a defunct (zombie) state
+
+            if (state == 'Z') {
+                printf("here");
+                // Store the PID of the defunct process in the global array
+                foundPIDs[numFound++] = pid;
+            }
+        }
+    }
+    // Close the pipe
+    pclose(pipe);
+}
 
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
@@ -331,6 +365,16 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xc") == 0)
         {
             continuePausedProcesses();
+            return 0;
+        }
+        else if (strcmp(argv[3], "-xz") == 0)
+        {
+            searchDefunctProcesses(childPID);
+            // Print the PIDs of defunct processes
+            printf("Defunct processes among the descendants of process %d:\n", childPID);
+            for (int i = 0; i < numFound; ++i) {
+                printf("%d\n", foundPIDs[i]);
+            }
             return 0;
         }
     }
