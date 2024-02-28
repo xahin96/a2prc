@@ -15,7 +15,7 @@ void createProcessTree(int parentPID, int numChildren, int levels) {
             exit(EXIT_FAILURE);
         } else if (childPID == 0) {
             // Child process
-            printf("Parent %d -> PID=%d\n", parentPID, getpid());
+            printf("Parent %d -> Child %d\n", parentPID, getpid());
             // Recursively create children
             createProcessTree(getpid(), numChildren, levels - 1);
             // Child process sleeps to stay alive
