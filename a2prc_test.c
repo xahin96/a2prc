@@ -274,6 +274,81 @@ void searchDefunctProcesses(int parentPID) {
     pclose(pipe);
 }
 
+void searchGrandchildProcesses(int parentPID) {
+    // Clear the foundPIDs array before populating it with new grandchild processes
+    numFound = 0;
+
+    // Open the pipe to read the output of the ps command
+    FILE *pipe = popen("ps -o pid,ppid -ax", "r");
+    if (!pipe) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the output of the ps command line by line
+    char line[BUFFER_SIZE];
+    fgets(line, BUFFER_SIZE, pipe); // Read and discard the header line
+    while (fgets(line, BUFFER_SIZE, pipe)) {
+        // Extract the PID and PPID from the line
+        int pid, ppid;
+        sscanf(line, "%d %d", &pid, &ppid);
+
+        // Get the parent's parent PID (grandparent)
+        int grandparentPID = getParentPID(getParentPID(pid));
+
+        // Check if the grandparent PID matches the specified parent process ID
+        if (grandparentPID == parentPID) {
+            // Store the PID of the grandchild process at the end of the foundPIDs array
+            foundPIDs[numFound++] = pid;
+        }
+    }
+    // Close the pipe
+    pclose(pipe);
+}
+
+void printProcessStatus(int processID) {
+    // Construct the path to the process status file
+    char filename[100];
+    sprintf(filename, "/proc/%d/status", processID);
+
+    // Open the file for reading
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the file line by line
+    char line[256];
+    bool found = false;
+    while (fgets(line, sizeof(line), file)) {
+        // Check if the line contains the process state
+        if (strstr(line, "State:") != NULL) {
+            // Extract the process state from the line
+            char state;
+            sscanf(line, "State: %c", &state);
+
+            // Check if the process is defunct (zombie)
+            if (state == 'Z') {
+                printf("Process %d is defunct (Zombie)\n", processID);
+            } else {
+                printf("Process %d is not defunct\n", processID);
+            }
+            found = true;
+            break;
+        }
+    }
+
+    // Close the file
+    fclose(file);
+
+    // If the process ID was not found in /proc, print an error message
+    if (!found) {
+        printf("Process with PID %d does not exist.\n", processID);
+    }
+}
+
+
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
     int childPID = atoi(argv[1]);
@@ -375,6 +450,21 @@ int main(int argc, char *argv[]) {
             for (int i = 0; i < numFound; ++i) {
                 printf("%d\n", foundPIDs[i]);
             }
+            return 0;
+        }
+        else if (strcmp(argv[3], "-xg") == 0)
+        {
+            searchGrandchildProcesses(childPID);
+            // Print the PIDs of defunct processes
+            printf("Grandchild of process %d:\n", childPID);
+            for (int i = 0; i < numFound; i++) {
+                printf("%d\n", foundPIDs[i]);
+            }
+            return 0;
+        }
+        else if (strcmp(argv[3], "-zs") == 0)
+        {
+            printProcessStatus(childPID);
             return 0;
         }
     }
