@@ -239,36 +239,6 @@ void pauseProcess(int processID) {
     }
 }
 
-// Function to send SIGCONT to all processes under the specified PPID
-void resumeProcessesUnderPPID(int parentPID) {
-    // Open the pipe to read the output of the ps command
-    FILE *pipe = popen("ps -o pid,ppid -ax", "r");
-    if (!pipe) {
-        perror("popen");
-        exit(EXIT_FAILURE);
-    }
-
-    // Read the output of the ps command line by line
-    char line[256];
-    fgets(line, sizeof(line), pipe); // Read and discard the header line
-    while (fgets(line, sizeof(line), pipe)) {
-        // Extract the PID and PPID from the line
-        int pid, ppid;
-        sscanf(line, "%d %d", &pid, &ppid);
-
-        // Check if the current process has the specified parent PID
-        if (ppid == parentPID) {
-            // Send the SIGCONT signal to resume the process
-            if (kill(pid, SIGCONT) == 0) {
-                printf("Sent SIGCONT to process %d\n", pid);
-            } else {
-                perror("Failed to send SIGCONT");
-            }
-        }
-    }
-    // Close the pipe
-    pclose(pipe);
-}
 
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
