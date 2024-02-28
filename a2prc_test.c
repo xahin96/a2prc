@@ -180,6 +180,95 @@ void searchSiblingProcesses(int processID) {
     searchDirectDescendants(parentPID);
 }
 
+// Function to write the process ID to a file when paused
+void writePausedProcessToFile(pid_t pid) {
+    // Open the file in append mode
+    FILE *file = fopen("paused_processes.txt", "a");
+    if (!file) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Write the process ID to the file
+    fprintf(file, "%d\n", pid);
+
+    // Close the file
+    fclose(file);
+}
+// Function to read the process IDs from the file and continue them
+void continuePausedProcesses() {
+    // Open the file for reading
+    FILE *file = fopen("paused_processes.txt", "r");
+    if (!file) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read process IDs from the file and continue them
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        pid_t pid = atoi(line);
+
+        // Send SIGCONT signal to the process
+        if (kill(pid, SIGCONT) == 0) {
+            printf("Continued process %d\n", pid);
+        } else {
+            perror("Failed to continue process");
+        }
+    }
+
+    // Close the file
+    fclose(file);
+
+    // Clear the file content
+    file = fopen("paused_processes.txt", "w");
+    if (!file) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
+    }
+    fclose(file);
+}
+
+void pauseProcess(int processID) {
+    // Send the SIGSTOP signal to pause the process
+    if (kill(processID, SIGSTOP) == 0) {
+        printf("Process %d paused\n", processID);
+        writePausedProcessToFile(processID);
+    } else {
+        perror("Failed to pause process");
+    }
+}
+
+// Function to send SIGCONT to all processes under the specified PPID
+void resumeProcessesUnderPPID(int parentPID) {
+    // Open the pipe to read the output of the ps command
+    FILE *pipe = popen("ps -o pid,ppid -ax", "r");
+    if (!pipe) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the output of the ps command line by line
+    char line[256];
+    fgets(line, sizeof(line), pipe); // Read and discard the header line
+    while (fgets(line, sizeof(line), pipe)) {
+        // Extract the PID and PPID from the line
+        int pid, ppid;
+        sscanf(line, "%d %d", &pid, &ppid);
+
+        // Check if the current process has the specified parent PID
+        if (ppid == parentPID) {
+            // Send the SIGCONT signal to resume the process
+            if (kill(pid, SIGCONT) == 0) {
+                printf("Sent SIGCONT to process %d\n", pid);
+            } else {
+                perror("Failed to send SIGCONT");
+            }
+        }
+    }
+    // Close the pipe
+    pclose(pipe);
+}
 
 int main(int argc, char *argv[]) {
     // Check if the user provided the parent and child PIDs
@@ -188,6 +277,7 @@ int main(int argc, char *argv[]) {
 
     if (!searchChildProcess(childPID, parentPID)) {
         printf("Child process %d not found under parent process %d\n", childPID, parentPID);
+        exit(0);
     }
 
     // Use the foundPIDs array in the if blocks as needed
@@ -261,6 +351,16 @@ int main(int argc, char *argv[]) {
             {
                 printf("%d\n", foundPIDs[i]);
             }
+            return 0;
+        }
+        else if (strcmp(argv[3], "-xt") == 0)
+        {
+            pauseProcess(childPID);
+            return 0;
+        }
+        else if (strcmp(argv[3], "-xc") == 0)
+        {
+            continuePausedProcesses();
             return 0;
         }
     }
