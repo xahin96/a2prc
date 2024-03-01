@@ -362,6 +362,7 @@ int main(int argc, char *argv[]) {
     // Use the foundPIDs array in the if blocks as needed
     if (argc == 3) {
         // Print the found PIDs
+        // TODO: print the last 2 data only
         printf("Found PIDs: ");
         for (int i = 0; i < numFound; ++i) {
             printf("%d ", foundPIDs[i]);
