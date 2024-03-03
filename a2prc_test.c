@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/types.h>
 
 #define MAX_PIDS 100 // Maximum number of PIDs to store
 #define BUFFER_SIZE 1024
@@ -351,6 +352,12 @@ void printProcessStatus(int processID) {
 
 int main(int argc, char *argv[]) {
     // checking for minimum argument number
+
+    argc = 3;
+    argv[0] = "./a2prc";
+    argv[1] = "995534"; // Corrected: Convert to string literal
+    argv[2] = "995529"; // Corrected: Convert to string literal
+
     if (argc < 3)
     {
         printf("Please follow the provided format: %s <process_id> <root_process> <command>(optional)\n", argv[0]);
