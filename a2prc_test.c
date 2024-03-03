@@ -350,16 +350,24 @@ void printProcessStatus(int processID) {
 
 
 int main(int argc, char *argv[]) {
-    // Check if the user provided the parent and child PIDs
-    int childPID = atoi(argv[1]);
-    int parentPID = atoi(argv[2]);
+    // checking for minimum argument number
+    if (argc < 3)
+    {
+        printf("Please follow the provided format: %s <process_id> <root_process> <command>(optional)\n", argv[0]);
+        return 0;
+    }
 
-    if (!isProcessCreatedByMe(parentPID)){
-        printf("The parent process with PID %d was not created by you.\n", parentPID);
+    // preparing process_id & root_process
+    int process_id = atoi(argv[1]);
+    int root_process = atoi(argv[2]);
+
+    // checks if the root_process is created by the logged-in user or not
+    if (!isProcessCreatedByMe(root_process)){
+        printf("Can not perform task on %d as it was not created by logged-in user.\n", root_process);
         exit(0);
     }
-    if (!searchChildProcess(childPID, parentPID)) {
-        printf("Child process %d not found under parent process %d\n", childPID, parentPID);
+    if (!searchChildProcess(process_id, root_process)) {
+        printf("Child process %d not found under parent process %d\n", process_id, root_process);
         exit(0);
     }
 
@@ -376,7 +384,7 @@ int main(int argc, char *argv[]) {
         if (strcmp(argv[3], "-rp") == 0){
             // Kill the processes found in the foundPIDs array
             for (int i = 0; i < numFound; ++i) {
-                if (foundPIDs[i] == childPID)
+                if (foundPIDs[i] == process_id)
                 {
                     if (kill(foundPIDs[i], SIGKILL) == 0) {
                         printf("Process %d killed\n", foundPIDs[i]);
@@ -389,24 +397,24 @@ int main(int argc, char *argv[]) {
         }
         else if (strcmp(argv[3], "-pr") == 0){
             // Check if the parent process was created by the current user
-            if (isProcessCreatedByMe(parentPID)){
+            if (isProcessCreatedByMe(root_process)){
                 // Kill the parent process
-                if (kill(parentPID, SIGKILL) == 0){
-                    printf("Parent process %d killed\n", parentPID);
+                if (kill(root_process, SIGKILL) == 0){
+                    printf("Parent process %d killed\n", root_process);
                 }
                 else{
-                    printf("Failed to kill parent process %d\n", parentPID);
+                    printf("Failed to kill parent process %d\n", root_process);
                 }
             }
             else{
-                printf("The parent process with PID %d was not created by you.\n", parentPID);
+                printf("The parent process with PID %d was not created by you.\n", root_process);
             }
             return 0;
         }
         else if (strcmp(argv[3], "-xn") == 0){
             // Search for non-direct descendants and print their PIDs
-            searchNonDirectDescendants(childPID);
-            printf("Non-direct descendants of process %d:\n", childPID);
+            searchNonDirectDescendants(process_id);
+            printf("Non-direct descendants of process %d:\n", process_id);
             for (int i = 0; i < numFound; ++i)
             {
                 printf("%d\n", foundPIDs[i]);
@@ -415,8 +423,8 @@ int main(int argc, char *argv[]) {
         }
         else if (strcmp(argv[3], "-xd") == 0){
             // Search for non-direct descendants and print their PIDs
-            searchDirectDescendants(childPID);
-            printf("direct descendants of process %d:\n", childPID);
+            searchDirectDescendants(process_id);
+            printf("direct descendants of process %d:\n", process_id);
             for (int i = 0; i < numFound; ++i)
             {
                 printf("%d\n", foundPIDs[i]);
@@ -425,8 +433,8 @@ int main(int argc, char *argv[]) {
         }
         else if (strcmp(argv[3], "-xs") == 0){
             // Search for non-direct descendants and print their PIDs
-            searchSiblingProcesses(childPID);
-            printf("siblings of process %d:\n", childPID);
+            searchSiblingProcesses(process_id);
+            printf("siblings of process %d:\n", process_id);
             for (int i = 1; i < numFound; ++i)
             {
                 printf("%d\n", foundPIDs[i]);
@@ -434,7 +442,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         else if (strcmp(argv[3], "-xt") == 0){
-            pauseProcess(childPID);
+            pauseProcess(process_id);
             return 0;
         }
         else if (strcmp(argv[3], "-xc") == 0){
@@ -442,28 +450,28 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         else if (strcmp(argv[3], "-xz") == 0){
-            searchDefunctProcesses(childPID);
+            searchDefunctProcesses(process_id);
             // Print the PIDs of defunct processes
-            printf("Defunct processes among the descendants of process %d:\n", childPID);
+            printf("Defunct processes among the descendants of process %d:\n", process_id);
             for (int i = 0; i < numFound; ++i) {
                 printf("%d\n", foundPIDs[i]);
             }
             return 0;
         }
         else if (strcmp(argv[3], "-xg") == 0){
-            searchGrandchildProcesses(childPID);
+            searchGrandchildProcesses(process_id);
             // Print the PIDs of defunct processes
-            printf("Grandchild of process %d:\n", childPID);
+            printf("Grandchild of process %d:\n", process_id);
             for (int i = 0; i < numFound; i++) {
                 printf("%d\n", foundPIDs[i]);
             }
             return 0;
         }
         else if (strcmp(argv[3], "-zs") == 0){
-            printProcessStatus(childPID);
+            printProcessStatus(process_id);
             return 0;
         }
     }
-    printf("Usage: %s <childPID> <parentPID>\n", argv[0]);
+    printf("Please follow the provided format: %s <process_id> <root_process> <command>(optional)\n", argv[0]);
     return 0;
 }
