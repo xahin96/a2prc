@@ -10,8 +10,11 @@
 
 // Global array to store found processes
 int branch_processes[100];
+int branch_processes_zombie[100];
 // Counter for total process found under a root_process
 int total_process_found = 0;
+int total_process_found_zombie = 0;
+
 
 // Checking if a process was created by the logged-in user or not
 // returns true/false
@@ -291,8 +294,6 @@ void pauseProcess(int process_id) {
 
 // Function to recursively search for defunct processes under process_id
 void searchDefunctProcesses(int process_id) {
-    total_process_found = 0;
-
     // Reading the command to get all the processes
     FILE *ps_cmd_output = popen("ps -o pid,state,ppid -ax", "r");
     if (!ps_cmd_output) {
@@ -316,7 +317,7 @@ void searchDefunctProcesses(int process_id) {
             // Checking if the process is a Zombie or not
             if (state == 'Z') {
                 // Storing in branch_processes
-                branch_processes[total_process_found++] = pid;
+                branch_processes_zombie[total_process_found_zombie++] = pid;
             }
         }
     }
@@ -402,11 +403,6 @@ void printProcessStatus(int processID) {
 
 
 int main(int argc, char *argv[]) {
-    argc = 4;
-    argv[0] = "./a2prc";
-    argv[1] = "995534";
-    argv[2] = "995529";
-
     // checking for minimum argument number
     if (argc < 3)
     {
@@ -419,13 +415,13 @@ int main(int argc, char *argv[]) {
     int root_process = atoi(argv[2]);
 
     // Checks if the root_process is created by the logged-in user or not
-    if (!isProcessCreatedByMe(root_process)){
-        printf("Can not perform task on %d as it was not created by logged-in user.\n", root_process);
-        exit(0);
-    }
+//    if (!isProcessCreatedByMe(root_process)){
+//        printf("Can not perform task on %d as it was not created by logged-in user.\n", root_process);
+//        exit(0);
+//    }
     // Checking whether process_id is under root_process or not
     if (!searchChildProcess(process_id, root_process)) {
-        printf("Child process %d not found under parent process %d\n", process_id, root_process);
+        printf("Does not belong to the process tree \n");
         exit(0);
     }
 
@@ -480,7 +476,6 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xn") == 0){
             // Searching for the non-direct descendants
             searchNonDirectDescendants(process_id);
-            printf("Non-direct descendants of %d:\n", process_id);
             for (int i = 0; i < total_process_found; ++i)
             {
                 printf("%d\n", branch_processes[i]);
@@ -491,7 +486,6 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xd") == 0){
             // Searching for the direct descendants
             searchDirectDescendants(process_id);
-            printf("direct descendants of %d:\n", process_id);
             for (int i = 0; i < total_process_found; ++i)
             {
                 printf("%d\n", branch_processes[i]);
@@ -502,7 +496,6 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xs") == 0){
             // Searching for sibling processes
             searchSiblingProcesses(process_id);
-            printf("siblings of %d:\n", process_id);
             for (int i = 1; i < total_process_found; ++i)
             {
                 printf("%d\n", branch_processes[i]);
@@ -524,8 +517,8 @@ int main(int argc, char *argv[]) {
             // Searching <defunct> processes
             searchDefunctProcesses(process_id);
             // Printing the PIDs of defunct processes
-            for (int i = 0; i < total_process_found; ++i) {
-                printf("%d\n", branch_processes[i]);
+            for (int i = 0; i < total_process_found_zombie; ++i) {
+                printf("%d\n", branch_processes_zombie[i]);
             }
             return 0;
         }
@@ -533,7 +526,6 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xg") == 0){
             searchGrandchildProcesses(process_id);
             // Print the PIDs of defunct processes
-            printf("Grandchild of process %d:\n", process_id);
             for (int i = 0; i < total_process_found; i++) {
                 printf("%d\n", branch_processes[i]);
             }
