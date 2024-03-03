@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
-#include <sys/types.h>
 
 #define MAX_PIDS 100 // Maximum number of PIDs to store
 #define BUFFER_SIZE 1024
@@ -386,6 +385,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+            return 0;
         }
         else if (strcmp(argv[3], "-pr") == 0){
             // Check if the parent process was created by the current user
