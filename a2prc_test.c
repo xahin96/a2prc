@@ -413,10 +413,10 @@ int main(int argc, char *argv[]) {
     int root_process = atoi(argv[2]);
 
     // Checks if the root_process is created by the logged-in user or not
-//    if (!isProcessCreatedByMe(root_process)){
-//        printf("Can not perform task on %d as it was not created by logged-in user.\n", root_process);
-//        exit(0);
-//    }
+    if (!isProcessCreatedByMe(root_process)){
+        printf("Can not perform task on %d as it was not created by logged-in user.\n", root_process);
+        exit(0);
+    }
     // Checking whether process_id is under root_process or not
     if (!searchChildProcess(process_id, root_process)) {
         printf("Does not belong to the process tree \n");
