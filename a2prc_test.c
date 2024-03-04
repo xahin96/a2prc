@@ -300,7 +300,6 @@ void searchDefunctProcesses(int process_id) {
         perror("popen");
         exit(EXIT_FAILURE);
     }
-
     char ps_cmd_line[BUFFER_SIZE];
     // Reading the first line which contains the header
     // Ultimately skipping it
@@ -311,7 +310,6 @@ void searchDefunctProcesses(int process_id) {
         int pid, ppid;
         char state;
         sscanf(ps_cmd_line, "%d %c %d", &pid, &state, &ppid);
-
         // Checking if the current process is a descendant of the specified parent process
         if (searchChildProcess(pid, process_id)) {
             // Checking if the process is a Zombie or not
@@ -476,6 +474,11 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xn") == 0){
             // Searching for the non-direct descendants
             searchNonDirectDescendants(process_id);
+            if (total_process_found == 0)
+            {
+                printf("No non-direct descendants\n");
+                return 0;
+            }
             for (int i = 0; i < total_process_found; ++i)
             {
                 printf("%d\n", branch_processes[i]);
@@ -486,6 +489,11 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xd") == 0){
             // Searching for the direct descendants
             searchDirectDescendants(process_id);
+            if (total_process_found == 0)
+            {
+                printf("No direct descendants\n");
+                return 0;
+            }
             for (int i = 0; i < total_process_found; ++i)
             {
                 printf("%d\n", branch_processes[i]);
@@ -496,6 +504,11 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xs") == 0){
             // Searching for sibling processes
             searchSiblingProcesses(process_id);
+            if (total_process_found == 0)
+            {
+                printf("No sibling/s \n");
+                return 0;
+            }
             for (int i = 1; i < total_process_found; ++i)
             {
                 printf("%d\n", branch_processes[i]);
@@ -516,6 +529,11 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[3], "-xz") == 0){
             // Searching <defunct> processes
             searchDefunctProcesses(process_id);
+            if (total_process_found_zombie == 0)
+            {
+                printf("No descendant zombie process/es\n");
+                return 0;
+            }
             // Printing the PIDs of defunct processes
             for (int i = 0; i < total_process_found_zombie; ++i) {
                 printf("%d\n", branch_processes_zombie[i]);
@@ -525,6 +543,11 @@ int main(int argc, char *argv[]) {
         // - xg lists the PIDs of all the grandchildren of process_id
         else if (strcmp(argv[3], "-xg") == 0){
             searchGrandchildProcesses(process_id);
+            if (total_process_found == 0)
+            {
+                printf("No grandchildren\n");
+                return 0;
+            }
             // Print the PIDs of defunct processes
             for (int i = 0; i < total_process_found; i++) {
                 printf("%d\n", branch_processes[i]);
