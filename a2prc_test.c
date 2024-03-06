@@ -560,6 +560,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
+
     printf("Please follow the provided format: %s <process_id> <root_process> <command>(optional)\n", argv[0]);
     return 0;
 }
